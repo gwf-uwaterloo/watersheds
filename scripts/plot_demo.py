@@ -17,24 +17,24 @@ print(result_source)
 
 all_btw_basins = na_basin.find_basins_btw_source_mouth(result_source[0], result_mouth[0])
 print(all_btw_basins)
-all_btw_basins_gpd = [gpd.GeoSeries(na_basin.get_basin_geo_by_id(b)) for b in all_btw_basins]
+all_btw_basins_gpd = [gpd.GeoSeries(na_basin.get_geo_by_id(b)) for b in all_btw_basins]
 
-all_children_basins_stlr = na_basin.find_children_basins(result_mouth[0])
+all_children_basins_stlr = na_basin.get_children(result_mouth[0])
 print(len(all_children_basins_stlr), 'children')
-all_children_basins_gpd = [gpd.GeoSeries(na_basin.get_basin_geo_by_id(b)) for b in all_children_basins_stlr]
+all_children_basins_gpd = [gpd.GeoSeries(na_basin.get_geo_by_id(b)) for b in all_children_basins_stlr]
 
 stl_river_source_point = gpd.GeoSeries(stl_river_source_point)
 stl_river_mouth_point = gpd.GeoSeries(stl_river_mouth_point)
 
-geo_stlr_basin = na_basin.get_basin_geo_by_id(result_source[0])[0]
+geo_stlr_basin = na_basin.get_geo_by_id(result_source[0])[0]
 geo_stlr_basin = gpd.GeoSeries(geo_stlr_basin)
 
-geo_stlr_basin2 = na_basin.get_basin_geo_by_id(result_mouth[0])[0]
+geo_stlr_basin2 = na_basin.get_geo_by_id(result_mouth[0])[0]
 geo_stlr_basin2 = gpd.GeoSeries(geo_stlr_basin2)
 
-all_btw_rivers = na_river.find_all_rivers_in_basins(all_btw_basins)
+all_btw_rivers = na_river.get_rivers_id_in_basins(all_btw_basins)
 print('len ', len(all_btw_rivers))
-geo_stlr_rivers = [gpd.GeoSeries(na_river.get_river_geo_by_id(item)) for item in all_btw_rivers]
+geo_stlr_rivers = [gpd.GeoSeries(na_river.get_geo_by_id(item)) for item in all_btw_rivers]
 
 fig, ax = plt.subplots()
 ax = plt.gca()
