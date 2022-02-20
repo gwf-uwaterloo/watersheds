@@ -2,11 +2,12 @@ from shapely.geometry import Point
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import contextily as cx
-from watersheds._base import Basin
+from watersheds._base import Basin, River
 
 
 # demo plot for St lawrence river
 na_basin = Basin()
+na_river = River()
 stl_river_mouth_point = Point(-71.225, 46.77)
 stl_river_source_point = Point(-76.4, 44.1)
 result_mouth = na_basin.find_point_belongs_to(stl_river_mouth_point)
@@ -31,6 +32,10 @@ geo_stlr_basin = gpd.GeoSeries(geo_stlr_basin)
 geo_stlr_basin2 = na_basin.get_basin_geo_by_id(result_mouth[0])[0]
 geo_stlr_basin2 = gpd.GeoSeries(geo_stlr_basin2)
 
+all_btw_rivers = na_river.find_all_rivers_in_basins(all_btw_basins)
+print('len ', len(all_btw_rivers))
+geo_stlr_rivers = [gpd.GeoSeries(na_river.get_river_geo_by_id(item)) for item in all_btw_rivers]
+
 fig, ax = plt.subplots()
 ax = plt.gca()
 
@@ -43,6 +48,8 @@ for a_b in all_btw_basins_gpd:
     a_b.plot(ax=ax, facecolor='black', alpha=0.3)
 for a_b in all_children_basins_gpd:
     a_b.plot(ax=ax, facecolor='grey', alpha=0.5)
+for r in geo_stlr_rivers:
+    r.plot(ax=ax, color='yellow', markersize=8)
 
 cx.add_basemap(ax, crs='EPSG:4326', source=cx.providers.CartoDB.Voyager)
 plt.show()
