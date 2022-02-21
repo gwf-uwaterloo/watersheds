@@ -6,7 +6,7 @@ class Basin():
     def construct_basin_dict():
         full_basin_dict = {}
         full_parent_basin_dict = {}
-        basin_lv12_path = 'watersheds/data/na_basin_lv12.geojson'
+        basin_lv12_path = '.cache/na_basin_lv12.geojson'
         full_basin_data = gpd.read_file(basin_lv12_path)
         # print(full_basin_data.head())
         for index, row in full_basin_data.iterrows():
@@ -74,7 +74,7 @@ class River():
     @staticmethod
     def construct_river_dict():
         full_river_dict = {}
-        river_path = 'watersheds/data/na_river_full.geojson'
+        river_path = '.cache/na_river_full.geojson'
         full_river_data = gpd.read_file(river_path)
         # print(full_river_data.head())
         for index, row in full_river_data.iterrows():
