@@ -1,4 +1,7 @@
 import geopandas as gpd
+from shapely.strtree import STRtree
+from shapely.ops import nearest_points
+
 
 
 class Basin():
@@ -51,13 +54,7 @@ class Basin():
         return found_basins_id
 
     def get_parent(self, query_basin_id):
-        found_basins_id = []
-        full_parent_basin_dict = self.main_basins_dict
-        # todo can a basin have multiple parents?
-        for k, v in full_parent_basin_dict.items():
-            if query_basin_id in v:
-                found_basins_id.append(k)
-        return found_basins_id
+        return self.main_basins_dict[query_basin_id]['MAIN_BAS']
 
     def get_geo_by_id(self, query_basin_id):
         full_basin_data = self.data_dict
@@ -68,6 +65,21 @@ class Basin():
 
     def find_basins_btw_source_mouth(self, source_basin_id, mouth_basin_id):
         return self.find_basins_btw_source_mouth_in_basin_lv12(source_basin_id, mouth_basin_id, self.data_dict, [])
+
+    def find_nearest_basin(self, query_point):
+        full_basin_data = self.data_dict
+        found_basins_id = -1
+        min_dist = float("inf")
+        for key, value in full_basin_data.items():
+            poly_geo = value['geometry']
+            temp_dist = query_point.distance(poly_geo)
+            if temp_dist < min_dist:
+                found_basins_id = value['HYBAS_ID']
+                min_dist = temp_dist
+            if poly_geo.contains(query_point):
+                found_basins_id = value['HYBAS_ID']
+                break
+        return found_basins_id
 
 
 class River():
