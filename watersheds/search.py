@@ -1,11 +1,12 @@
 import json
 from collections import deque
+import geopandas as gpd
 
+# need to add pyserini to sys path before new release containing searcher is made
 from pyserini.search.lucene import LuceneGeoSearcher
 from pyserini.search.lucene._geo_searcher import JSort, JLatLonDocValuesField, JLatLonShape, JQueryRelation, JLongPoint
 from pyserini.search.lucene import LuceneSearcher
 
-import geopandas as gpd
 
 def get_mouth_segment(result, searcher):
   # if we have the mouth, or we have neither the mouth nor the source
