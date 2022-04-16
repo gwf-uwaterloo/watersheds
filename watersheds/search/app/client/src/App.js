@@ -72,7 +72,7 @@ function App() {
         <Sider width={400} theme='light'>
           <Search placeholder="enter river name" onSearch={onSearch} loading={loading} style={{ width: 380, marginRight: 10, marginLeft: 10, marginTop: 20 }} />
           <List
-            dataSource={results.slice(0, 9)}
+            dataSource={results?.slice(0, 9)}
             style={{ margin: 10 }}
             renderItem={item => (
               <List.Item onClick={() => setSelected(item.key)} style={item.key === selected ? {backgroundColor: 'gainsboro'} : {}}>
