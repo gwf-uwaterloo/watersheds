@@ -66,13 +66,17 @@ function App() {
     setLoading(false);
   }
 
+  useEffect(() => {
+    window.dispatchEvent(new Event('resize'));
+  })
+
   return (
     <div className="App">
-      <Layout style={{ minHeight: '100vh' }}>
+      <Layout style={{ minHeight: "100vh" }}>
         <Sider width={400} theme='light'>
           <Search placeholder="enter river name" onSearch={onSearch} loading={loading} style={{ width: 380, marginRight: 10, marginLeft: 10, marginTop: 20 }} />
           <List
-            dataSource={results?.slice(0, 9)}
+            dataSource={results}
             style={{ margin: 10 }}
             renderItem={item => (
               <List.Item onClick={() => setSelected(item.key)} style={item.key === selected ? {backgroundColor: 'gainsboro'} : {}}>
@@ -86,7 +90,7 @@ function App() {
           />
         </Sider>
         <Layout className="site-layout">
-          <MapContainer center={[43.4643, -80.5204]} zoom={13}>
+          <MapContainer center={[43.4643, -80.5204]} zoom={13} >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
