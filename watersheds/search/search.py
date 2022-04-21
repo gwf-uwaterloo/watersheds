@@ -58,7 +58,7 @@ def bfs(result, searcher, mouth_segment, basin, t0):
     basin_ids.add(cur_segment['HYBAS_L12'])
 
     query = JLongPoint.newExactQuery('NEXT_DOWN', cur_segment['HYRIV_ID'])
-    hits = searcher.search(query, 2)
+    hits = searcher.search(query, 4)
     for hit in hits:
       q.append(json.loads(hit.raw))
 
