@@ -1,6 +1,8 @@
 import json
 from collections import deque
 import geopandas as gpd
+import time
+
 
 # need to add pyserini to sys path before new release containing searcher is made
 from pyserini.search.lucene import LuceneGeoSearcher
@@ -40,7 +42,7 @@ def get_mouth_segment(result, searcher):
   
   return mouth_segment
 
-def bfs(result, searcher, mouth_segment):
+def bfs(result, searcher, mouth_segment, basin, t0):
   # keep track of river geometries and basin ids
   wkts = []
   metadata = []
@@ -56,14 +58,18 @@ def bfs(result, searcher, mouth_segment):
     basin_ids.add(cur_segment['HYBAS_L12'])
 
     query = JLongPoint.newExactQuery('NEXT_DOWN', cur_segment['HYRIV_ID'])
-    hits = searcher.search(query, 10000000)
+    hits = searcher.search(query, 4)
     for hit in hits:
       q.append(json.loads(hit.raw))
 
+  print("")
+  print("BFS: Done ActualBFS, Time:", time.time() - t0)
   # convert river wkt to list
   segments = gpd.GeoSeries.from_wkt(wkts)
   result['geometry'] = [[[[p[1], p[0]] for p in list(line.coords)], data] for line, data in zip(segments, metadata)]
 
+  print("")
+  print("BFS: Done convert river wkt to list, Time:", time.time() - t0)
   # convert basins ids to basin geometries
   basin_polygons = []
   for id in basin_ids:
@@ -75,15 +81,21 @@ def bfs(result, searcher, mouth_segment):
   for multipolygon in basin_polygons:
     for polygon in multipolygon.geoms:
       result['basin_geometry'].append([[[p[1], p[0]] for p in list(polygon.exterior.coords)], []])
+  
+  print("")
+  print("BFS: Done convert basins ids to basin geometries, Time:", time.time() - t0)
 
-def get_geometries(text):
+def get_geometries(text, basin):
+  t0 = time.time()
   # get rivers and their mouths from text
+  print("Time:", time.time() - t0)
   print("Searching for rivers in wiki...")
   searcher = LuceneSearcher('indexes/wikidata')
   hits = searcher.search(text, fields={'contents': 1.0}, k=12)
   searcher.close()
   
   # convert raw string results to json
+  print("Time:", time.time() - t0)
   print("Converting string results to json...")
   results = []
   for i in range(len(hits)):
@@ -91,20 +103,23 @@ def get_geometries(text):
     results.append(raw)
   
   # get geometries of each river
+  print("Time:", time.time() - t0)
   print("Getting geometries of rivers...")
   searcher = LuceneGeoSearcher('indexes/hydrorivers')
   
   for i, result in enumerate(results):
+    print("Time:", time.time() - t0)
     print(f"Getting mouth segment of {result['contents']}...")
     print(result)
     mouth_segment = get_mouth_segment(result, searcher)
     print(mouth_segment)
 
-
+    print("Time:", time.time() - t0)
     print(f"BFS on {result['contents']}...")
-    bfs(result, searcher, mouth_segment)
+    bfs(result, searcher, mouth_segment, basin, t0)
 
     # set zoom bounds, first point bottom left and second point top right
+    print("Time:", time.time() - t0)
     print(result['geometry'][0])
     result['bounds'] = [ 
       [min([min(line[0], key=lambda p: p[0]) for line in result['geometry']], key=lambda p: p[0])[0], min([min(line[0], key=lambda p: p[1]) for line in result['geometry']], key=lambda p: p[1])[1]],
