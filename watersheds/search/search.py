@@ -5,6 +5,9 @@ import time
 
 
 # need to add pyserini to sys path before new release containing searcher is made
+# import sys
+# sys.path.insert(1, '/home/matthewyang/pyserini')
+
 from pyserini.search.lucene import LuceneGeoSearcher
 from pyserini.search.lucene._geo_searcher import JSort, JLatLonDocValuesField, JLatLonShape, JQueryRelation, JLongPoint
 from pyserini.search.lucene import LuceneSearcher
@@ -91,7 +94,7 @@ def get_geometries(text, basin):
   print("Time:", time.time() - t0)
   print("Searching for rivers in wiki...")
   searcher = LuceneSearcher('indexes/wikidata')
-  hits = searcher.search(text, fields={'contents': 1.0}, k=12)
+  hits = searcher.search(text, fields={'contents': 1.0}, k=25)
   searcher.close()
   
   # convert raw string results to json

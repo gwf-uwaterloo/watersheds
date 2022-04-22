@@ -10,10 +10,18 @@ watersheds provide Api for users to easily search in HydroBASINS and HydroRIVERS
 
 ## Project Structure
 	- requirements.txt
+	- /docs
+		- README.md
+			runbook for this project
 	- /scripts
 		- plot_demo.py
 			demo to use watersheds api search and plot
 	- / watersheds
+		- /search
+			- /app
+				- web app for river searching
+			- search.py
+				- API methods used to search for rivers/basins
 		- /data
 			all HydroBASINS and HydroRIVERS geojson files here
 		- _base.py
