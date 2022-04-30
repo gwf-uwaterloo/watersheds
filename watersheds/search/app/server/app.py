@@ -4,8 +4,8 @@ from flask_cors import CORS
 import sys
 sys.path.insert(1, '../../..')
 
-from _base import Basin
-from search.search import get_geometries
+from _base import Basin, River
+from search.search import search_river
 
 
 app = Flask(__name__)
@@ -13,12 +13,13 @@ CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 basin = Basin()
+river = River()
 
 @app.route("/", methods=['POST', 'GET'])
 def rivers_search():
   if request.method == 'POST':
     req = request.json
-    results = get_geometries(req['searchText'], basin)
+    results = search_river(req['searchText'], basin, river)
     return jsonify(results)
   
   elif request.method == 'GET':

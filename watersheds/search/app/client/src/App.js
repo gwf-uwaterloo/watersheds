@@ -53,7 +53,7 @@ function App() {
     setLoading(true);
     
     try {
-      const response = await fetch('http://127.0.0.1:5000/', {
+      const response = await fetch('http://206.12.94.70:5000/', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -87,7 +87,7 @@ function App() {
           <Search placeholder="enter river name" onSearch={onSearch} loading={loading} style={{ width: 380, marginRight: 10, marginLeft: 10, marginTop: 20 }} />
           <List
             dataSource={results}
-            style={{ margin: 10 }}
+            style={{ margin: 10, maxHeight: "90vh", overflow: "auto" }}
             renderItem={item => (
               <List.Item onClick={() => setSelected(item.key)} style={item.key === selected ? {backgroundColor: 'gainsboro'} : {}}>
                 <List.Item.Meta

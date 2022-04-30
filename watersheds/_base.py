@@ -19,16 +19,14 @@ class Basin():
 
     @staticmethod
     def find_basins_btw_source_mouth_in_basin_lv12(source_basin_id, mouth_basin_id, full_basin_dict, found_basins_id):
-        next_basin_id = full_basin_dict[source_basin_id]['NEXT_DOWN']
-        next_basin = full_basin_dict[next_basin_id]
-        # print(source_basin_id, 'next is', next_basin['HYBAS_ID'])
-        found_basins_id = found_basins_id + [next_basin['HYBAS_ID']]
-        if next_basin['HYBAS_ID'] == mouth_basin_id:
+        print('SOURCE, MOUTH:', source_basin_id, mouth_basin_id)
+        if source_basin_id == mouth_basin_id or source_basin_id == 0:
             # print('done', found_basins_id)
-            if found_basins_id is not None:
-                return found_basins_id
-        return Basin.find_basins_btw_source_mouth_in_basin_lv12(next_basin['HYBAS_ID'], mouth_basin_id, full_basin_dict,
-                                                          found_basins_id)
+            return found_basins_id + [mouth_basin_id]
+        
+        next_basin_id = full_basin_dict[source_basin_id]['NEXT_DOWN']
+        return Basin.find_basins_btw_source_mouth_in_basin_lv12(next_basin_id, mouth_basin_id, full_basin_dict,
+                                                          found_basins_id + [source_basin_id])
 
     def __init__(self):
         self.data_dict, self.main_basins_dict = self.construct_basin_dict()
@@ -88,6 +86,14 @@ class River():
         full_river_data = self.data_dict
         if query_river_id in full_river_data:
             return full_river_data[query_river_id]['geometry']
+        else:
+            return None
+    
+    def get_metadata_by_id(self, query_river_id):
+        full_river_data = self.data_dict
+        if query_river_id in full_river_data:
+            river_segment = full_river_data[query_river_id]
+            [river_segment['ORD_STRA'], river_segment['ORD_CLAS'], river_segment['ORD_FLOW']]
         else:
             return None
 
