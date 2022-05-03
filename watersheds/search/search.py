@@ -56,53 +56,51 @@ def get_mouth_source_segment(result, searcher):
 
   return mouth_segment, source_segment
 
-def bfs(searcher, mouth_segment, t0):
+def bfs_river(basin, river, mouth_id, t0):
   # keep track of river geometries and basin ids
   wkts = []
   metadata = []
   basin_ids = set()
 
   # bfs from mouth segment
-  q = deque([mouth_segment])
+  q = deque([mouth_id])
   while q:
-    cur_segment = q.popleft()
+    cur_id = q.popleft()
+    cur_id = str(cur_id)
+    if cur_id not in river.data_dict: continue
 
-    wkts.append(cur_segment['geometry'])
-    metadata.append([cur_segment['ORD_STRA'], cur_segment['ORD_CLAS'], cur_segment['ORD_FLOW']])
-    basin_ids.add(cur_segment['HYBAS_L12'])
+    wkts.append(river.get_geo_by_id(cur_id))
+    metadata.append(river.get_metadata_by_id(cur_id))
+    basin_ids.add(river.data_dict[cur_id]['HYBAS_L12'])
 
-    query = JLongPoint.newExactQuery('NEXT_DOWN', cur_segment['HYRIV_ID'])
-    hits = searcher.search(query, 150)
-    for hit in hits:
-      q.append(json.loads(hit.raw))
+    if cur_id not in river.next_river_id_dict: continue
+    for neighbour in river.next_river_id_dict[cur_id]:
+      q.append(neighbour)
 
   print("")
   print("Done BFS, Time:", time.time() - t0)
 
   return wkts, metadata, basin_ids
 
-# def bfs_basin(mouth_basin_id, searcher):
-#   basin_ids = set()
+def bfs_basin(basin, mouth_basin_id, t0):
+  basin_ids = set()
 
-#   q = deque([mouth_basin_id])
-#   while q:
-#     cur_id = q.popleft()
-#     basin_ids.add(cur_id)
+  q = deque([mouth_basin_id])
+  while q:
+    cur_id = q.popleft()
+    cur_id = str(cur_id)
 
-#     query = JLongPoint.newExactQuery('NEXT_DOWN', cur_id)
-#     hits = searcher.search(query, 120)
-#     for hit in hits:
-#       print(hit)
-#       print("")
-#       print(hit.lucene_document)
-#       q.append(hit.lucene_document['HYRIV_ID'])
+    basin_ids.add(cur_id)
 
-#   return basin_ids
+    if cur_id not in basin.next_basin_id_dict: continue
+    for neighbour in basin.next_basin_id_dict[cur_id]:
+      q.append(neighbour)
+
+  return basin_ids
 
 def get_geometries(result, wkts, metadata, basin_ids, basin, t0):
   # convert river wkt to list
-  segments = gpd.GeoSeries.from_wkt(wkts)
-  result['geometry'] = [[[[p[1], p[0]] for p in list(line.coords)], data] for line, data in zip(segments, metadata)]
+  result['geometry'] = [[[[p[1], p[0]] for p in list(line.coords)], data] for line, data in zip(wkts, metadata)]
 
   print("")
   print("Done converting river wkt to list, Time:", time.time() - t0)
@@ -157,7 +155,7 @@ def search_river(text, basin, river):
     # found mouth but not source
     if not source_segment:
       print(f"BFS on {result['contents']}...")
-      wkts, metadata, basin_ids = bfs(searcher, mouth_segment, t0)
+      wkts, metadata, basin_ids = bfs_river(basin, river, mouth_segment['HYRIV_ID'], t0)
     
     # otherwise, we must have both (source but not mouth impossible since if we have source, we can trace mouth)
     else:
@@ -169,15 +167,11 @@ def search_river(text, basin, river):
       for id in river_ids:
         if not id: continue
         query = JLongPoint.newExactQuery('HYRIV_ID', id)
-        hits = searcher.search(query, 1)
-        river_segment = json.loads(hits[0].raw)
 
-        wkts.append(river_segment['geometry'])
-        metadata.append([river_segment['ORD_STRA'], river_segment['ORD_CLAS'], river_segment['ORD_FLOW']])
-    
-      print("mouth segment:", mouth_segment)
-      _, _, basin_ids = bfs(searcher, mouth_segment, t0)
-      print("basin_ids: ", basin_ids)
+        wkts.append(river.get_geo_by_id(id))
+        metadata.append(river.get_metadata_by_id(id))
+
+      basin_ids = bfs_basin(basin, mouth_segment['HYBAS_L12'], t0)
 
     get_geometries(result, wkts, metadata, basin_ids, basin, t0)
 

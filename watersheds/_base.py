@@ -6,21 +6,20 @@ class Basin():
     @staticmethod
     def construct_basin_dict():
         full_basin_dict = {}
-        full_parent_basin_dict = {}
+        full_parent_basin_dict = defaultdict(list)
+        full_next_basin_id_dict = defaultdict(list)
+        
         basin_lv12_path = '.cache/na_basin_lv12.geojson'
         full_basin_data = gpd.read_file(basin_lv12_path)
         # print(full_basin_data.head())
         for index, row in full_basin_data.iterrows():
             full_basin_dict[row['HYBAS_ID']] = row
-            if row['MAIN_BAS'] not in full_parent_basin_dict:
-                full_parent_basin_dict[row['MAIN_BAS']] = [row['HYBAS_ID']]
-            else:
-                full_parent_basin_dict[row['MAIN_BAS']].append(row['HYBAS_ID'])
-        return full_basin_dict, full_parent_basin_dict
+            full_parent_basin_dict[row['MAIN_BAS']].append(row['HYBAS_ID'])
+            full_next_basin_id_dict[row['NEXT_DOWN']].append(row['HYBAS_ID'])
+        return full_basin_dict, full_parent_basin_dict, full_next_basin_id_dict
 
     @staticmethod
     def find_basins_btw_source_mouth_in_basin_lv12(source_basin_id, mouth_basin_id, full_basin_dict, found_basins_id):
-        print('SOURCE, MOUTH:', source_basin_id, mouth_basin_id)
         if source_basin_id == mouth_basin_id or source_basin_id == 0:
             # print('done', found_basins_id)
             return found_basins_id + [mouth_basin_id]
@@ -30,7 +29,7 @@ class Basin():
                                                           found_basins_id + [source_basin_id])
 
     def __init__(self):
-        self.data_dict, self.main_basins_dict = self.construct_basin_dict()
+        self.data_dict, self.main_basins_dict, self.next_basin_id_dict = self.construct_basin_dict()
 
     def find_point_belongs_to(self, point):
         full_basin_data = self.data_dict
@@ -73,15 +72,17 @@ class River():
     @staticmethod
     def construct_river_dict():
         full_river_dict = {}
+        full_next_river_id_dict = defaultdict(list)
         river_path = '.cache/na_river_full.geojson'
         full_river_data = gpd.read_file(river_path)
         # print(full_river_data.head())
         for index, row in full_river_data.iterrows():
             full_river_dict[row['HYRIV_ID']] = row
-        return full_river_dict
+            full_next_river_id_dict[row['NEXT_DOWN']].append(row['HYRIV_ID'])
+        return full_river_dict, full_next_river_id_dict
 
     def __init__(self):
-        self.data_dict = self.construct_river_dict()
+        self.data_dict, self.next_river_id_dict = self.construct_river_dict()
 
     def get_geo_by_id(self, query_river_id):
         full_river_data = self.data_dict
@@ -105,13 +106,3 @@ class River():
             if value['HYBAS_L12'] in query_basin_id_list:
                 found_river_id.append(value['HYRIV_ID'])
         return found_river_id
-
-if __name__ == "__main__":
-    next_down = defaultdict(int)
-    basin = Basin()
-    for _, b in basin.data_dict.items():
-        next_down[b['NEXT_DOWN']] += 1
-    
-    del next_down[0]
-
-    print(max(next_down.values()))
