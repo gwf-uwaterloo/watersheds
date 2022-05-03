@@ -28,4 +28,3 @@ def rivers_search():
 @app.route('/test/')
 def hello():
   return '<h1>Hello, World!</h1>'
-  

@@ -1,4 +1,5 @@
 import geopandas as gpd
+from collections import defaultdict
 
 
 class Basin():
@@ -104,3 +105,13 @@ class River():
             if value['HYBAS_L12'] in query_basin_id_list:
                 found_river_id.append(value['HYRIV_ID'])
         return found_river_id
+
+if __name__ == "__main__":
+    next_down = defaultdict(int)
+    basin = Basin()
+    for _, b in basin.data_dict.items():
+        next_down[b['NEXT_DOWN']] += 1
+    
+    del next_down[0]
+
+    print(max(next_down.values()))

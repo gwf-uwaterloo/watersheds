@@ -56,7 +56,7 @@ def get_mouth_source_segment(result, searcher):
 
   return mouth_segment, source_segment
 
-def bfs(result, searcher, mouth_segment, basin, t0):
+def bfs(searcher, mouth_segment, t0):
   # keep track of river geometries and basin ids
   wkts = []
   metadata = []
@@ -72,7 +72,7 @@ def bfs(result, searcher, mouth_segment, basin, t0):
     basin_ids.add(cur_segment['HYBAS_L12'])
 
     query = JLongPoint.newExactQuery('NEXT_DOWN', cur_segment['HYRIV_ID'])
-    hits = searcher.search(query, 4)
+    hits = searcher.search(query, 150)
     for hit in hits:
       q.append(json.loads(hit.raw))
 
@@ -80,6 +80,24 @@ def bfs(result, searcher, mouth_segment, basin, t0):
   print("Done BFS, Time:", time.time() - t0)
 
   return wkts, metadata, basin_ids
+
+# def bfs_basin(mouth_basin_id, searcher):
+#   basin_ids = set()
+
+#   q = deque([mouth_basin_id])
+#   while q:
+#     cur_id = q.popleft()
+#     basin_ids.add(cur_id)
+
+#     query = JLongPoint.newExactQuery('NEXT_DOWN', cur_id)
+#     hits = searcher.search(query, 120)
+#     for hit in hits:
+#       print(hit)
+#       print("")
+#       print(hit.lucene_document)
+#       q.append(hit.lucene_document['HYRIV_ID'])
+
+#   return basin_ids
 
 def get_geometries(result, wkts, metadata, basin_ids, basin, t0):
   # convert river wkt to list
@@ -139,12 +157,12 @@ def search_river(text, basin, river):
     # found mouth but not source
     if not source_segment:
       print(f"BFS on {result['contents']}...")
-      wkts, metadata, basin_ids = bfs(result, searcher, mouth_segment, basin, t0)
+      wkts, metadata, basin_ids = bfs(searcher, mouth_segment, t0)
     
     # otherwise, we must have both (source but not mouth impossible since if we have source, we can trace mouth)
     else:
-      basin_ids = set(basin.find_basins_btw_source_mouth(source_segment['HYBAS_L12'], mouth_segment['HYBAS_L12']))
-      river_ids = river.get_rivers_id_in_basins(basin_ids)
+      river_basin_ids = set(basin.find_basins_btw_source_mouth(source_segment['HYBAS_L12'], mouth_segment['HYBAS_L12']))
+      river_ids = river.get_rivers_id_in_basins(river_basin_ids)
 
       wkts = []
       metadata = []
@@ -156,6 +174,10 @@ def search_river(text, basin, river):
 
         wkts.append(river_segment['geometry'])
         metadata.append([river_segment['ORD_STRA'], river_segment['ORD_CLAS'], river_segment['ORD_FLOW']])
+    
+      print("mouth segment:", mouth_segment)
+      _, _, basin_ids = bfs(searcher, mouth_segment, t0)
+      print("basin_ids: ", basin_ids)
 
     get_geometries(result, wkts, metadata, basin_ids, basin, t0)
 
