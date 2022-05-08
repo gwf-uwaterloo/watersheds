@@ -95,7 +95,7 @@ class River():
         full_river_data = self.data_dict
         if query_river_id in full_river_data:
             river_segment = full_river_data[query_river_id]
-            [river_segment['ORD_STRA'], river_segment['ORD_CLAS'], river_segment['ORD_FLOW']]
+            return [river_segment['ORD_STRA'], river_segment['ORD_CLAS'], river_segment['ORD_FLOW']]
         else:
             return None
 
