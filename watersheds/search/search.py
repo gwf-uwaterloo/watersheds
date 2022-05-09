@@ -1,7 +1,7 @@
 import json
 from collections import deque
-import geopandas as gpd
 import time
+import logging
 
 
 # need to add pyserini to sys path before new release containing searcher is made
@@ -56,38 +56,50 @@ def get_mouth_source_segment(result, searcher):
 
   return mouth_segment, source_segment
 
-def bfs(result, searcher, mouth_segment, basin, t0):
+def bfs_river(river, mouth_id):
   # keep track of river geometries and basin ids
   wkts = []
   metadata = []
   basin_ids = set()
+  visited = set()
 
   # bfs from mouth segment
-  q = deque([mouth_segment])
+  q = deque([mouth_id])
   while q:
-    cur_segment = q.popleft()
+    cur_id = q.popleft()
+    if cur_id in visited: continue
+    if cur_id not in river.data_dict: continue
 
-    wkts.append(cur_segment['geometry'])
-    metadata.append([cur_segment['ORD_STRA'], cur_segment['ORD_CLAS'], cur_segment['ORD_FLOW']])
-    basin_ids.add(cur_segment['HYBAS_L12'])
+    wkts.append(river.get_geo_by_id(cur_id))
+    metadata.append(river.get_metadata_by_id(cur_id))
+    basin_ids.add(river.data_dict[cur_id]['HYBAS_L12'])
+    visited.add(cur_id)
 
-    query = JLongPoint.newExactQuery('NEXT_DOWN', cur_segment['HYRIV_ID'])
-    hits = searcher.search(query, 4)
-    for hit in hits:
-      q.append(json.loads(hit.raw))
-
-  print("")
-  print("Done BFS, Time:", time.time() - t0)
+    if cur_id not in river.next_river_id_dict: continue
+    for neighbour in river.next_river_id_dict[cur_id]:
+      q.append(neighbour)
 
   return wkts, metadata, basin_ids
 
-def get_geometries(result, wkts, metadata, basin_ids, basin, t0):
-  # convert river wkt to list
-  segments = gpd.GeoSeries.from_wkt(wkts)
-  result['geometry'] = [[[[p[1], p[0]] for p in list(line.coords)], data] for line, data in zip(segments, metadata)]
+def bfs_basin(basin, starting_basin_ids):
+  basin_ids = set()
 
-  print("")
-  print("Done converting river wkt to list, Time:", time.time() - t0)
+  q = deque(starting_basin_ids)
+  while q:
+    cur_id = q.popleft()
+    if cur_id in basin_ids: continue
+
+    basin_ids.add(cur_id)
+
+    if cur_id not in basin.next_basin_id_dict: continue
+    for neighbour in basin.next_basin_id_dict[cur_id]:
+      q.append(neighbour)
+
+  return basin_ids
+
+def get_geometries(result, wkts, metadata, basin_ids, basin):
+  # convert river wkt to list
+  result['geometry'] = [[[[p[1], p[0]] for p in list(line.coords)], data] for line, data in zip(wkts, metadata)]
   # convert basins ids to basin geometries
   basin_polygons = []
   for id in basin_ids:
@@ -99,72 +111,71 @@ def get_geometries(result, wkts, metadata, basin_ids, basin, t0):
   for multipolygon in basin_polygons:
     for polygon in multipolygon.geoms:
       result['basin_geometry'].append([[[p[1], p[0]] for p in list(polygon.exterior.coords)], []])
-  
-  print("")
-  print("Done converting basins ids to basin geometries, Time:", time.time() - t0)
+
 
 def search_river(text, basin, river):
   t0 = time.time()
   # get rivers and their mouths from text
-  print("Time:", time.time() - t0)
-  print("Searching for rivers in wiki...")
+  logging.info("Searching for rivers in wiki...", time.time() - t0)
   searcher = LuceneSearcher('indexes/wikidata')
-  hits = searcher.search(text, fields={'contents': 1.0}, k=20)
+  hits = searcher.search(text, fields={'contents': 1.0}, k=15)
   searcher.close()
   
   # convert raw string results to json
-  print("Time:", time.time() - t0)
-  print("Converting string results to json...")
+  logging.info("Converting string results to json...", time.time() - t0)
   results = []
   for i in range(len(hits)):
     raw = json.loads(hits[i].raw)
     results.append(raw)
   
   # get geometries of each river
-  print("Time:", time.time() - t0)
-  print("Getting geometries of rivers...")
+  logging.info("Loading searcher...", time.time() - t0)
   searcher = LuceneGeoSearcher('indexes/hydrorivers')
   
   for i, result in enumerate(results):
-    print("Time:", time.time() - t0)
-    print(f"Getting mouth/source segment of {result['contents']}...")
-    print(result)
+    logging.info(f"Getting mouth/source segment of {result['contents']}...", time.time() - t0)
     mouth_segment, source_segment = get_mouth_source_segment(result, searcher)
     
-    print("Time:", time.time() - t0)
     # neither segments found
     if not mouth_segment and not source_segment:
       continue
     
     # found mouth but not source
     if not source_segment:
-      print(f"BFS on {result['contents']}...")
-      wkts, metadata, basin_ids = bfs(result, searcher, mouth_segment, basin, t0)
+      logging.info("Search with no source...", time.time() - t0)
+      wkts, metadata, basin_ids = bfs_river(river, mouth_segment['HYRIV_ID'])
     
     # otherwise, we must have both (source but not mouth impossible since if we have source, we can trace mouth)
     else:
-      basin_ids = set(basin.find_basins_btw_source_mouth(source_segment['HYBAS_L12'], mouth_segment['HYBAS_L12']))
-      river_ids = river.get_rivers_id_in_basins(basin_ids)
+      logging.info("Search with both mouth and source...", time.time() - t0)
+      river_basin_ids = set(basin.find_basins_btw_source_mouth(source_segment['HYBAS_L12'], mouth_segment['HYBAS_L12']))
+      river_ids = river.get_rivers_id_in_basins(river_basin_ids)
 
       wkts = []
       metadata = []
       for id in river_ids:
         if not id: continue
-        query = JLongPoint.newExactQuery('HYRIV_ID', id)
-        hits = searcher.search(query, 1)
-        river_segment = json.loads(hits[0].raw)
+        wkts.append(river.get_geo_by_id(id))
+        metadata.append(river.get_metadata_by_id(id))
+      
+      basin_ids = bfs_basin(basin, river_basin_ids)
 
-        wkts.append(river_segment['geometry'])
-        metadata.append([river_segment['ORD_STRA'], river_segment['ORD_CLAS'], river_segment['ORD_FLOW']])
-
-    get_geometries(result, wkts, metadata, basin_ids, basin, t0)
+    logging.info("Getting geometries...", time.time() - t0)
+    get_geometries(result, wkts, metadata, basin_ids, basin)
 
     # set zoom bounds, first point bottom left and second point top right
-    print("Time:", time.time() - t0)
-    print(result['geometry'][0])
+    logging.info("Setting bounds and finishing up...", time.time() - t0)
+    min_lat, max_lat = 90, -90
+    min_lon, max_lon = 180, -180
+    for geo in result['geometry']:
+      line = geo[0]
+      for point in line:
+        min_lat, max_lat = min(min_lat, point[0]), max(max_lat, point[0])
+        min_lon, max_lon = min(min_lon, point[1]), max(max_lon, point[1])
+
     result['bounds'] = [
-      [min([min(line[0], key=lambda p: p[0]) for line in result['geometry']], key=lambda p: p[0])[0], min([min(line[0], key=lambda p: p[1]) for line in result['geometry']], key=lambda p: p[1])[1]],
-      [max([max(line[0], key=lambda p: p[0]) for line in result['geometry']], key=lambda p: p[0])[0], max([max(line[0], key=lambda p: p[1]) for line in result['geometry']], key=lambda p: p[1])[1]]
+      [min_lat, min_lon],
+      [max_lat, max_lon]
     ]
 
     # set key

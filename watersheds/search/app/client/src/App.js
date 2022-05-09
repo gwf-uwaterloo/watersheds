@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, useMap, Polyline, Polygon } from 'react-leaflet';
 import { Layout, Input, List, notification } from 'antd';
 import './App.css';
+require('dotenv').config();
 
 const { Sider } = Layout;
 const { Search } = Input;
@@ -53,7 +54,7 @@ function App() {
     setLoading(true);
     
     try {
-      const response = await fetch('http://206.12.94.70:5000/', {
+      const response = await fetch(process.env.BACKEND_ENDPOINT, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
