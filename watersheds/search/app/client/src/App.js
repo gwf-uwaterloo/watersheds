@@ -31,10 +31,12 @@ function Rivers({results, selected}) {
     }
   }, [selected, results]);
   
+  if (results.length <= selected) return <></>
+  let result = results[selected];
   return (
     <>
-      {results?.map(result => result.basin_geometry?.map(poly => <Polygon positions={poly} pathOptions={result.key === selected ? { color: '#66a9c9', weight: 1, fillOpacity: 0.1 } : { color: '#baccd9', weight: 1, fillOpacity: 0.2 }}/>))}
-      {results?.map(result => result.geometry?.map(line => <Polyline positions={line[0]} pathOptions={result.key === selected ? { color: riverColor(line[1][1]) } : { color: '#c0c4c3' }}/>))}
+      {result?.basin_geometry?.map(poly => <Polygon positions={poly} pathOptions={{ color: '#66a9c9', weight: 1, fillOpacity: 0.1 }}/>)}
+      {result?.geometry?.map(line => <Polyline positions={line[0]} pathOptions={{ color: riverColor(line[1][1]) }}/>)}
     </>
   )
 }
