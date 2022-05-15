@@ -6,9 +6,9 @@ git clone https://github.com/gwf-uwaterloo/watersheds.git && conda create -n YOU
 ```
 2. Activate the conda env
 3. Run `yarn` at `watersheds/watersheds/search/app/client/`
-4. Run `pip install requirements.txt` at `watersheds/`
+4. Run `pip install -r requirements.txt` at `watersheds/`
 5. In `watersheds/watersheds/search/search.py`, change `sys.path.insert(1, '/home/matthewyang/pyserini')` to `sys.path.insert(1, PATH_TO_PYSERINI_ON_YOUR_LOCAL_MACHINE)`
-6. Add a `.env` file in `watersheds/watersheds/search/app/client/` and add `BACKEND_ENDPOINT="http://127.0.0.1:5000/` to the file
+6. Add a `.env` file in `watersheds/watersheds/search/app/client/` and add `REACT_APP_BACKEND_ENDPOINT="http://127.0.0.1:5000/` to the file
 
 ## Building the Rivers Indices
 1. Download HydroRIVERS data and extract it: `wget https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_shp.zip && unzip HydroRIVERS_v10_shp.zip`

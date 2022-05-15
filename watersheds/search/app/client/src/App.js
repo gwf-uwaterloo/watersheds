@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, useMap, Polyline, Polygon } from 'react-leaflet';
 import { Layout, Input, List, notification } from 'antd';
 import './App.css';
-require('dotenv').config();
 
 const { Sider } = Layout;
 const { Search } = Input;
@@ -31,14 +30,14 @@ function Rivers({results, selected}) {
     }
   }, [selected, results]);
   
-  if (results.length <= selected) return <></>
-  let result = results[selected];
+  if (!results) return <></>;
+  if (results.length <= selected) return <></>;
   return (
     <>
-      {result?.basin_geometry?.map(poly => <Polygon positions={poly} pathOptions={{ color: '#66a9c9', weight: 1, fillOpacity: 0.1 }}/>)}
-      {result?.geometry?.map(line => <Polyline positions={line[0]} pathOptions={{ color: riverColor(line[1][1]) }}/>)}
+      {results[selected]?.basin_geometry?.map(poly => <Polygon positions={poly} pathOptions={{ color: '#66a9c9', weight: 0.5, fillOpacity: 0.1 }}/>)}
+      {results[selected]?.geometry?.map(line => <Polyline positions={line[0]} pathOptions={{ color: riverColor(line[1][1]), weight: 1.5 }}/>)}
     </>
-  )
+  );
 }
 
 const openNotificationWithIcon = type => {
@@ -56,7 +55,7 @@ function App() {
     setLoading(true);
     
     try {
-      const response = await fetch(process.env.BACKEND_ENDPOINT, {
+      const response = await fetch(process.env.REACT_APP_BACKEND_ENDPOINT, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
