@@ -31,12 +31,14 @@ function Rivers({results, selected}) {
     }
   }, [selected, results]);
   
+  if (!results) return <></>;
+  if (results.length <= selected) return <></>;
   return (
     <>
-      {results?.map(result => result.basin_geometry?.map(poly => <Polygon positions={poly} pathOptions={result.key === selected ? { color: '#66a9c9', weight: 1, fillOpacity: 0.1 } : { color: '#baccd9', weight: 1, fillOpacity: 0.2 }}/>))}
-      {results?.map(result => result.geometry?.map(line => <Polyline positions={line[0]} pathOptions={result.key === selected ? { color: riverColor(line[1][1]) } : { color: '#c0c4c3' }}/>))}
+      {results[selected]?.basin_geometry?.map(poly => <Polygon positions={poly} pathOptions={{ color: '#66a9c9', weight: 0.5, fillOpacity: 0.1 }}/>)}
+      {results[selected]?.geometry?.map(line => <Polyline positions={line[0]} pathOptions={{ color: riverColor(line[1][1]), weight: 1.5 }}/>)}
     </>
-  )
+  );
 }
 
 const openNotificationWithIcon = type => {
@@ -54,7 +56,7 @@ function App() {
     setLoading(true);
     
     try {
-      const response = await fetch(process.env.BACKEND_ENDPOINT, {
+      const response = await fetch(process.env.REACT_APP_BACKEND_ENDPOINT, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
