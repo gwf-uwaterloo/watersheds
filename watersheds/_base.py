@@ -25,6 +25,7 @@ class Basin():
             return found_basins_id + [mouth_basin_id]
         
         if source_basin_id not in full_basin_dict:
+            print("\n BASIN ID NOT FOUND \n")
             return found_basins_id + [mouth_basin_id]
         next_basin_id = full_basin_dict[source_basin_id]['NEXT_DOWN']
         return Basin.find_basins_btw_source_mouth_in_basin_lv12(next_basin_id, mouth_basin_id, full_basin_dict,

@@ -1,8 +1,6 @@
 import json
 from collections import deque
 import time
-import logging
-
 
 # need to add pyserini to sys path before new release containing searcher is made
 import sys
@@ -24,10 +22,12 @@ def get_mouth_source_segment(result, searcher):
   # if we don't have source
   if 0 not in result['details']['coordinate_state']:
     mouth_index = 0
+    # no source, but at least we have mouth
     if 1 in result['details']['coordinate_state']:
       mouth_index = result['details']['coordinate_state'].index(1)
+    # we have neither source nor mouth
     if not result['details']['coordinate_state']:
-      return None
+      return None, None
 
     # query for initial segment
     mouth_segment = get_segment_from_coordinate(result['details']['coordinate'][mouth_index][1], result['details']['coordinate'][mouth_index][0], searcher)
@@ -113,28 +113,29 @@ def get_geometries(result, wkts, metadata, basin_ids, basin):
       result['basin_geometry'].append([[[p[1], p[0]] for p in list(polygon.exterior.coords)], []])
 
 
-def search_river(text, basin, river):
+def search_river(text, basin, river, debug=True):
   t0 = time.time()
   # get rivers and their mouths from text
-  logging.info("Searching for rivers in wiki...", time.time() - t0)
+  if debug: print("Searching for rivers in wiki...", time.time() - t0)
   searcher = LuceneSearcher('indexes/wikidata')
   hits = searcher.search(text, fields={'contents': 1.0}, k=15)
   searcher.close()
   
   # convert raw string results to json
-  logging.info("Converting string results to json...", time.time() - t0)
+  if debug: print("Converting string results to json...", time.time() - t0)
   results = []
   for i in range(len(hits)):
     raw = json.loads(hits[i].raw)
     results.append(raw)
   
   # get geometries of each river
-  logging.info("Loading searcher...", time.time() - t0)
+  if debug: print("Loading searcher...", time.time() - t0)
   searcher = LuceneGeoSearcher('indexes/hydrorivers')
   
   for i, result in enumerate(results):
-    logging.info(f"Getting mouth/source segment of {result['contents']}...", time.time() - t0)
+    if debug: print(f"Getting mouth/source segment of {result['contents']}...", time.time() - t0)
     mouth_segment, source_segment = get_mouth_source_segment(result, searcher)
+    if debug: print(f"Mouth segment: {mouth_segment}, source segment: {source_segment}")
     
     # neither segments found
     if not mouth_segment and not source_segment:
@@ -142,12 +143,12 @@ def search_river(text, basin, river):
     
     # found mouth but not source
     if not source_segment:
-      logging.info("Search with no source...", time.time() - t0)
+      if debug: print("Search with no source...", time.time() - t0)
       wkts, metadata, basin_ids = bfs_river(river, mouth_segment['HYRIV_ID'])
     
     # otherwise, we must have both (source but not mouth impossible since if we have source, we can trace mouth)
     else:
-      logging.info("Search with both mouth and source...", time.time() - t0)
+      if debug: print("Search with both mouth and source...", time.time() - t0)
       river_basin_ids = set(basin.find_basins_btw_source_mouth(source_segment['HYBAS_L12'], mouth_segment['HYBAS_L12']))
       river_ids = river.get_rivers_id_in_basins(river_basin_ids)
 
@@ -160,11 +161,11 @@ def search_river(text, basin, river):
       
       basin_ids = bfs_basin(basin, river_basin_ids)
 
-    logging.info("Getting geometries...", time.time() - t0)
+    if debug: print("Getting geometries...", time.time() - t0)
     get_geometries(result, wkts, metadata, basin_ids, basin)
 
     # set zoom bounds, first point bottom left and second point top right
-    logging.info("Setting bounds and finishing up...", time.time() - t0)
+    if debug: print("Setting bounds and finishing up...", time.time() - t0)
     min_lat, max_lat = 90, -90
     min_lon, max_lon = 180, -180
     for geo in result['geometry']:
