@@ -9,7 +9,7 @@ class Basin():
         full_parent_basin_dict = defaultdict(list)
         full_next_basin_id_dict = defaultdict(list)
         
-        basin_lv12_path = '.cache/na_basin_lv12.geojson'
+        basin_lv12_path = '.cache/basin.geojson'
         full_basin_data = gpd.read_file(basin_lv12_path)
         # print(full_basin_data.head())
         for index, row in full_basin_data.iterrows():
@@ -24,6 +24,9 @@ class Basin():
             # print('done', found_basins_id)
             return found_basins_id + [mouth_basin_id]
         
+        if source_basin_id not in full_basin_dict:
+            print("\n BASIN ID NOT FOUND \n")
+            return found_basins_id + [mouth_basin_id]
         next_basin_id = full_basin_dict[source_basin_id]['NEXT_DOWN']
         return Basin.find_basins_btw_source_mouth_in_basin_lv12(next_basin_id, mouth_basin_id, full_basin_dict,
                                                           found_basins_id + [source_basin_id])
@@ -73,7 +76,7 @@ class River():
     def construct_river_dict():
         full_river_dict = {}
         full_next_river_id_dict = defaultdict(list)
-        river_path = '.cache/na_river_full.geojson'
+        river_path = '.cache/river.geojson'
         full_river_data = gpd.read_file(river_path)
         # print(full_river_data.head())
         for index, row in full_river_data.iterrows():
