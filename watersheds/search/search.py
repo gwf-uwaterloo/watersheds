@@ -133,6 +133,10 @@ def search_river(text, basin, river, debug=True):
   searcher = LuceneGeoSearcher('indexes/hydrorivers')
   
   for i, result in enumerate(results):
+    # set key
+    result['key'] = i
+    if debug: print("KEY", result['key'])
+
     if debug: print(f"Getting mouth/source segment of {result['contents']}...", time.time() - t0)
     mouth_segment, source_segment = get_mouth_source_segment(result, searcher)
     if debug: print(f"Mouth segment: {mouth_segment}, source segment: {source_segment}")
@@ -151,15 +155,36 @@ def search_river(text, basin, river, debug=True):
       if debug: print("Search with both mouth and source...", time.time() - t0)
       river_basin_ids = set(basin.find_basins_btw_source_mouth(source_segment['HYBAS_L12'], mouth_segment['HYBAS_L12']))
       river_ids = river.get_rivers_id_in_basins(river_basin_ids)
-
-      wkts = []
-      metadata = []
-      for id in river_ids:
-        if not id: continue
-        wkts.append(river.get_geo_by_id(id))
-        metadata.append(river.get_metadata_by_id(id))
       
       basin_ids = bfs_basin(basin, river_basin_ids)
+      tributary_ids = river.get_rivers_id_in_basins(basin_ids)
+
+      # add main river geometries
+      wkts = []
+      metadata = []
+      visited = set()
+      
+      for id in river_ids:
+        if not id or id in visited: continue
+        
+        wkts.append(river.get_geo_by_id(id))
+        metadata.append([1, 1, 1])
+
+        visited.add(id)
+
+      # add tributary river geometries, and to separate them from the main rivers, make their color lighter
+      for id in tributary_ids:
+        if not id or id in visited: continue
+        
+        wkts.append(river.get_geo_by_id(id))
+        
+        tributary_metadata = river.get_metadata_by_id(id)
+        # makes color lighter
+        for i in range(len(tributary_metadata)):
+          tributary_metadata[i] += 2
+        metadata.append(tributary_metadata)
+        
+        visited.add(id)
 
     if debug: print("Getting geometries...", time.time() - t0)
     get_geometries(result, wkts, metadata, basin_ids, basin)
@@ -178,8 +203,5 @@ def search_river(text, basin, river, debug=True):
       [min_lat, min_lon],
       [max_lat, max_lon]
     ]
-
-    # set key
-    result['key'] = i
 
   return results
