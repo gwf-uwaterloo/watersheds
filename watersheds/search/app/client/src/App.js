@@ -7,7 +7,7 @@ const { Sider } = Layout;
 const { Search } = Input;
 
 function riverColor(color) {
-  if (color === 0) return '#122e1f';
+  if (color === 0) return '#000000';
   if (color === 1) return '#183c29';
   if (color === 2) return '#2a6847';
   if (color === 3) return '#3c9566';
@@ -29,8 +29,8 @@ function Rivers({results, selected}) {
   if (!results) return <></>;
   return (
     <>
-      {results?.map(result => result.key === selected ? result.basin_geometry?.map(poly => <Polygon positions={poly} pathOptions={{ color: '#66a9c9', weight: 0.5, fillOpacity: 0.1 }}/>) : null)}
-      {results?.map(result => result.key === selected ? result.geometry?.map(line => <Polyline positions={line[0]} pathOptions={{ color: riverColor(line[1][1]), weight: 1.5 }}/>) : null)}
+      {results[selected]?.basin_geometry?.map(poly => <Polygon positions={poly} pathOptions={{ color: '#66a9c9', weight: 0.5, fillOpacity: 0.1 }}/>)}
+      {results[selected]?.geometry?.map(line => <Polyline positions={line[0]} pathOptions={{ color: riverColor(line[1][1]), weight: 1.5 }}/>)}
     </>
   );
 }
