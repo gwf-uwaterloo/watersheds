@@ -168,21 +168,16 @@ def search_river(text, basin, river, debug=True):
         if not id or id in visited: continue
         
         wkts.append(river.get_geo_by_id(id))
-        metadata.append([1, 1, 1])
+        metadata.append([0, 0, 0])
 
         visited.add(id)
 
-      # add tributary river geometries, and to separate them from the main rivers, make their color lighter
+      # add tributary river geometries
       for id in tributary_ids:
         if not id or id in visited: continue
         
         wkts.append(river.get_geo_by_id(id))
-        
-        tributary_metadata = river.get_metadata_by_id(id)
-        # makes color lighter
-        for i in range(len(tributary_metadata)):
-          tributary_metadata[i] += 2
-        metadata.append(tributary_metadata)
+        metadata.append(river.get_metadata_by_id(id))
         
         visited.add(id)
 
