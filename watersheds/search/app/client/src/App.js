@@ -2,24 +2,18 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, useMap, Polyline, Polygon } from 'react-leaflet';
 import { Layout, Input, List, notification } from 'antd';
 import './App.css';
-require('dotenv').config();
 
 const { Sider } = Layout;
 const { Search } = Input;
 
 function riverColor(color) {
+  if (color === 0) return '#000000';
   if (color === 1) return '#183c29';
   if (color === 2) return '#2a6847';
   if (color === 3) return '#3c9566';
   if (color === 4) return '#77b594';
   if (color === 5) return '#b1d5c2';
   if (color >= 6) return '#d8eae0';
-  // if (color >= 6) return '#183c29';
-  // if (color === 5) return '#2a6847';
-  // if (color === 4) return '#3c9566';
-  // if (color === 3) return '#77b594';
-  // if (color === 2) return '#b1d5c2';
-  // if (color >= 1) return '#d8eae0';
 }
 
 function Rivers({results, selected}) {
@@ -29,10 +23,10 @@ function Rivers({results, selected}) {
     if (results && results.length > selected) {
       map.flyToBounds(results[selected].bounds, {padding: [11, 11]});
     }
+    console.log("Selected", selected);
   }, [selected, results]);
   
   if (!results) return <></>;
-  if (results.length <= selected) return <></>;
   return (
     <>
       {results[selected]?.basin_geometry?.map(poly => <Polygon positions={poly} pathOptions={{ color: '#66a9c9', weight: 0.5, fillOpacity: 0.1 }}/>)}
